@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Permit Closure QR</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600&family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{--ink:#14213D;--amber:#F2A900;--bg:#E9EDF3;color-scheme:light;box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0F1626}}
+:root[data-theme="dark"]{--bg:#0F1626}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);font-family:"Barlow",system-ui,sans-serif;display:flex;justify-content:center;padding:24px 16px}
+.card{background:#fff;color:var(--ink);width:100%;max-width:380px;border-radius:18px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.18);text-align:center}
+.top{background:var(--amber);padding:20px 16px;background-image:repeating-linear-gradient(135deg,transparent 0 14px,rgba(20,33,61,.08) 14px 28px)}
+.top h1{margin:0;font:700 2rem/1 "Barlow Condensed",sans-serif}
+.top p{margin:6px 0 0;font-weight:600}
+#qr{display:flex;justify-content:center;padding:26px 0 10px}
+#qr img,#qr canvas{width:240px;height:240px}
+.scan{font:700 1.4rem "Barlow Condensed",sans-serif;letter-spacing:.04em;margin:6px 0 4px}
+.sub{color:#5B677D;margin:0 16px 20px;font-size:.95rem}
+.foot{background:var(--ink);color:#fff;padding:10px;font-size:.85rem;word-break:break-all}
+@media print{body{background:#fff}.card{box-shadow:none;border:1px solid #ccc}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="top"><h1>PERMIT CLOSURE</h1><p>Permit to Work</p></div>
+  <div id="qr" role="img" aria-label="QR code to open the Permit Closure app"></div>
+  <div class="scan">SCAN TO CLOSE PERMITS</div>
+  <p class="sub">Point your phone camera at the code to open the app.</p>
+  <div class="foot" id="link">CPF Block 9</div>
+</div>
+<script>
+new QRCode(document.getElementById("qr"),{
+  text:new URL("./", location.href).href,
+  width:480,height:480,colorDark:"#14213D",colorLight:"#ffffff",
+  correctLevel:QRCode.CorrectLevel.M
+});
+document.getElementById("link").textContent = new URL("./", location.href).href;
+</script>
+</body>
+</html>
