@@ -67,6 +67,19 @@ ul{list-style:none;margin:0;padding:0}
 .toast.on{opacity:1}
 .linkbtn{background:transparent;color:var(--muted);padding:4px 0;font-weight:500;text-decoration:underline}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
+.wa-card{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--ink);background:var(--card);border:1.5px solid #1FA855;border-radius:14px;padding:12px 14px;margin-bottom:16px}
+.wa-card .ic{flex:none;width:44px;height:44px;border-radius:50%;background:#1FA855;color:#fff;display:grid;place-items:center}
+.wa-card small{display:block;color:var(--muted);font-size:.85rem}
+.wa-card b{font:700 1.3rem "Barlow Condensed",sans-serif;letter-spacing:.04em;direction:ltr;unicode-bidi:embed}
+.wa-card .go{margin-left:auto;color:#1FA855;font-weight:600;font-size:.9rem;white-space:nowrap}
+.prof-head{display:flex;justify-content:space-between;align-items:center}
+.prof-head h2{margin:0}
+.prof-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin-top:10px}
+.prof-grid small{display:block;color:var(--muted);font-size:.8rem}
+.prof-grid b{font-weight:600;word-break:break-word}
+.hint{color:var(--muted);margin:-6px 0 4px;font-size:.9rem}
+.btn-save{width:100%;margin-top:14px;background:var(--ink);color:var(--paper)}
+[hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -76,12 +89,35 @@ ul{list-style:none;margin:0;padding:0}
     <p>Close permits, then send the report on WhatsApp</p>
   </header>
 
-  <section>
+  <a class="wa-card" href="https://wa.me/9647748193551" target="_blank" rel="noopener" aria-label="Open WhatsApp chat with PTW office">
+    <span class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.3-.5 0-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.3.5-.4.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.7-.1 1.3Z"/></svg></span>
+    <span><small>PTW Office WhatsApp</small><b>+964 774 819 3551</b></span>
+    <span class="go">Chat ›</span>
+  </a>
+
+  <section id="profileView" hidden>
+    <div class="prof-head"><h2>Your details</h2><button class="linkbtn" id="editBtn">Edit</button></div>
+    <div class="prof-grid">
+      <div><small>Name</small><b id="vName"></b></div>
+      <div><small>Company</small><b id="vCompany"></b></div>
+      <div><small>Phone</small><b id="vPhone"></b></div>
+      <div><small>PA badge</small><b id="vBadge"></b></div>
+    </div>
+  </section>
+
+  <section id="profileForm">
     <h2>Your details</h2>
+    <p class="hint">Enter these once. They are saved on this phone.</p>
     <label for="name">Full name</label>
     <input id="name" autocomplete="name" placeholder="e.g. Ahmed Ali">
     <label for="company">Company</label>
     <input id="company" autocomplete="organization" placeholder="e.g. Kuwait Energy">
+    <label for="phone">Phone number</label>
+    <input id="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="e.g. 0770 123 4567">
+    <label for="badge">PA badge number</label>
+    <input id="badge" inputmode="text" autocomplete="off" placeholder="e.g. PA-1234">
+    <button class="btn-save" id="saveBtn">Save details</button>
+    <div class="err" id="profErr"></div>
   </section>
 
   <section>
@@ -125,6 +161,10 @@ $("name").value = store.get("pc_name", "");
 $("company").value = store.get("pc_company", "");
 $("name").addEventListener("input", e => store.set("pc_name", e.target.value.trim()));
 $("company").addEventListener("input", e => store.set("pc_company", e.target.value.trim()));
+$("phone").value = store.get("pc_phone", "");
+$("badge").value = store.get("pc_badge", "");
+$("phone").addEventListener("input", e => store.set("pc_phone", e.target.value.trim()));
+$("badge").addEventListener("input", e => store.set("pc_badge", e.target.value.trim()));
 
 function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("on"),2600); }
 const fmtDate = d => new Date(d).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
@@ -173,7 +213,7 @@ function render(){
 
 function clearHistory(){ if(confirm("Clear all sent permits from this device?")){ history=[]; store.set("pc_history",history); render(); } }
 
-function buildPDF(name, company, items){
+function buildPDF(name, company, phone, badge, items){
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({unit:"mm", format:"a4"});
   const W = doc.internal.pageSize.getWidth();
@@ -192,17 +232,20 @@ function buildPDF(name, company, items){
   doc.text(fmtDate(now)+"  "+fmtTime(now), W-15, 25, {align:"right"});
 
   doc.setTextColor(20,33,61);
-  doc.setFillColor(244,246,249); doc.roundedRect(15,46,W-30,26,2,2,"F");
-  doc.setFontSize(9); doc.setTextColor(91,103,125);
-  doc.text("CLOSED BY",21,54); doc.text("COMPANY",W/2+3,54);
-  doc.text("TOTAL PERMITS CLOSED",21,65);
+  doc.setFillColor(244,246,249); doc.roundedRect(15,46,W-30,40,2,2,"F");
+  const L=21, Rx=W/2+3;
+  doc.setFont("helvetica","normal"); doc.setFontSize(8.5); doc.setTextColor(91,103,125);
+  doc.text("CLOSED BY",L,53); doc.text("COMPANY",Rx,53);
+  doc.text("PHONE NUMBER",L,66); doc.text("PA BADGE NO.",Rx,66);
+  doc.text("TOTAL PERMITS CLOSED",L,79);
   doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(20,33,61);
-  doc.text(name,21,60); doc.text(company,W/2+3,60);
-  doc.text(String(items.length),68,65);
+  doc.text(name,L,59,{maxWidth:W/2-12}); doc.text(company,Rx,59,{maxWidth:W/2-12});
+  doc.text(phone,L,72); doc.text(badge,Rx,72);
+  doc.text(String(items.length),L+42,79);
 
   const sorted = [...items].sort((a,b)=>a.at-b.at);
   doc.autoTable({
-    startY:80,
+    startY:94,
     head:[["#","Permit No.","Closure Date","Closure Time","Status"]],
     body:sorted.map((p,i)=>[i+1,p.no,fmtDate(p.at),fmtTime(p.at),"CLOSED"]),
     theme:"grid",
@@ -221,6 +264,7 @@ function buildPDF(name, company, items){
   doc.setDrawColor(20,33,61); doc.line(15,y,85,y); doc.line(W-85,y,W-15,y);
   doc.setFontSize(9); doc.setTextColor(91,103,125);
   doc.text("Name: "+name,15,y+5); doc.text("Signature",W-85,y+5);
+  doc.text("PA Badge: "+badge+"   |   Phone: "+phone,15,y+10);
 
   const pages = doc.internal.getNumberOfPages();
   for(let i=1;i<=pages;i++){
@@ -258,16 +302,18 @@ function fallbackSend(blob, fileName, msg){
 
 async function send(){
   const name = $("name").value.trim(), company = $("company").value.trim();
-  if(!name || !company){ toast("Enter your name and company first"); (name?$("company"):$("name")).focus(); return; }
+  const phone = $("phone").value.trim(), badge = $("badge").value.trim().toUpperCase();
+  const missing = [["name",name],["company",company],["phone",phone],["badge",badge]].find(f=>!f[1]);
+  if(missing){ toast("Fill in your details first"); $("profileView").hidden=true; $("profileForm").hidden=false; $(missing[0]).focus(); return; }
   if(!pending.length) return;
   if(!window.jspdf){ toast("PDF tool did not load. Check your internet and reload."); return; }
 
   const items = [...pending];
-  const {doc, ref} = buildPDF(name, company, items);
+  const {doc, ref} = buildPDF(name, company, phone, badge, items);
   const safe = s => s.replace(/[^\w\-]+/g,"_");
   const fileName = `Permit_Closure_${safe(company)}_${safe(name)}_${dayKey(new Date())}.pdf`;
   const blob = doc.output("blob");
-  const msg = `Permit Closure Report\nCompany: ${company}\nClosed by: ${name}\nPermits (${items.length}): ${items.map(p=>p.no).join(", ")}\nRef: ${ref}`;
+  const msg = `Permit Closure Report\nCompany: ${company}\nClosed by: ${name}\nPA Badge: ${badge}\nPhone: ${phone}\nPermits (${items.length}): ${items.map(p=>p.no).join(", ")}\nRef: ${ref}`;
 
   const file = new File([blob], fileName, {type:"application/pdf"});
 
@@ -293,6 +339,23 @@ async function send(){
 $("closeBtn").addEventListener("click", addPermit);
 $("permit").addEventListener("keydown", e=>{ if(e.key==="Enter") addPermit(); });
 $("sendBtn").addEventListener("click", send);
+const FIELDS=["name","company","phone","badge"];
+function showProfile(){
+  const v={name:$("name").value.trim(),company:$("company").value.trim(),phone:$("phone").value.trim(),badge:$("badge").value.trim().toUpperCase()};
+  const done=FIELDS.every(k=>v[k]);
+  if(done){ $("vName").textContent=v.name; $("vCompany").textContent=v.company; $("vPhone").textContent=v.phone; $("vBadge").textContent=v.badge; }
+  $("profileView").hidden=!done; $("profileForm").hidden=done;
+  return done;
+}
+$("saveBtn").addEventListener("click",()=>{
+  const miss=FIELDS.find(k=>!$(k).value.trim());
+  if(miss){ $("profErr").textContent="Please fill in all four fields."; $(miss).focus(); return; }
+  $("profErr").textContent="";
+  $("badge").value=$("badge").value.trim().toUpperCase(); store.set("pc_badge",$("badge").value);
+  showProfile(); toast("Details saved"); $("permit").focus();
+});
+$("editBtn").addEventListener("click",()=>{ $("profileView").hidden=true; $("profileForm").hidden=false; $("name").focus(); });
+showProfile();
 render();
 if("serviceWorker" in navigator && location.protocol==="https:"){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
 </script>
